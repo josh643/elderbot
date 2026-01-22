@@ -73,16 +73,24 @@ class BotEngine:
                 await self.scan_cycle()
                 await self.manage_positions_cycle()
                 await asyncio.sleep(60) # Scan every minute
+            except asyncio.CancelledError:
+                logger.info("Bot stopped by user.")
+                break
             except Exception as e:
                 logger.error(f"Main loop error: {e}")
+                # Wait before retrying to avoid rapid crash loops
                 await asyncio.sleep(60)
 
     async def scan_cycle(self):
-        logger.info("Scanning for new tokens...")
-        new_tokens = await self.jupiter.scan_new_tokens()
-        
-        for mint in new_tokens:
-            await self.analyze_and_trade(mint)
+        try:
+            logger.info("Scanning for new tokens...")
+            new_tokens = await self.jupiter.scan_new_tokens()
+            
+            for mint in new_tokens:
+                await self.analyze_and_trade(mint)
+        except Exception as e:
+            logger.error(f"Scan cycle failed: {e}")
+
 
     async def analyze_and_trade(self, mint):
         logger.info(f"Analyzing {mint}...")
