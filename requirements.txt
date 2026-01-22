@@ -1,0 +1,11 @@
+solders
+solana
+jupiter-python-sdk
+streamlit
+pandas
+python-dotenv
+requests
+httpx
+aiohttp
+plotly
+watchdog
