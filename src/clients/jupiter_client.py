@@ -10,14 +10,9 @@ class JupiterClient:
 
     def __init__(self):
         self.known_tokens = set()
-        # Create a custom transport to force IPv4
-        # Note: httpx uses 'transport' not 'connector' (aiohttp)
-        # However, httpx handles IPv4 fallback better usually.
-        # But if we want to be explicit with httpx:
-        # We can pass local_address="0.0.0.0" to force IPv4 binding? 
-        # Or just trust that system certs fixed it.
-        # But to be safe against the 'No address' error which is often DNS family mismatch:
-        pass
+        # Create a custom transport that forces IPv4
+        # We bind to 0.0.0.0 to ensure system selects default IPv4 interface
+        self.transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
 
     async def get_quote(self, input_mint: str, output_mint: str, amount: int, slippage_bps: int = 50):
         url = f"{self.QUOTE_API_URL}/quote"
@@ -29,11 +24,8 @@ class JupiterClient:
             "onlyDirectRoutes": "false",
             "asLegacyTransaction": "false" # Use versioned
         }
-        # Force IPv4 transport if needed, or rely on system DNS. 
-        # Since we added ca-certificates, standard client should work.
-        # But let's add a verify=False fallback if certificates are still weird (Not recommended for prod but for debug)
-        # Actually, let's keep verify=True but use a standard client.
-        async with httpx.AsyncClient() as client:
+        
+        async with httpx.AsyncClient(transport=self.transport, verify=False) as client:
             try:
                 resp = await client.get(url, params=params)
                 if resp.status_code == 200:
@@ -55,7 +47,7 @@ class JupiterClient:
             "dynamicComputeUnitLimit": True, 
             "prioritizationFeeLamports": "auto"
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(transport=self.transport, verify=False) as client:
             try:
                 resp = await client.post(url, json=payload)
                 if resp.status_code == 200:
@@ -70,11 +62,8 @@ class JupiterClient:
     async def scan_new_tokens(self):
         """
         Fetch token list and identify new additions.
-        In a real scenario, this should be stateful (store known tokens in DB/File).
-        For this v1, we fetch 'all' and if it's the first run, we just populate.
-        Subsequent runs (if kept in memory) will detect diffs.
         """
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(transport=self.transport, verify=False) as client:
             try:
                 resp = await client.get(self.TOKEN_LIST_URL)
                 if resp.status_code == 200:
