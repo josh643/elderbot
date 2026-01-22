@@ -18,8 +18,14 @@ class SolanaClient:
         self.keypair = None
         if Config.SOLANA_PRIVATE_KEY:
             try:
-                # Attempt to decode base58
-                self.keypair = Keypair.from_base58_string(Config.SOLANA_PRIVATE_KEY)
+                # Check if key is list of integers (JSON format)
+                if "[" in Config.SOLANA_PRIVATE_KEY and "]" in Config.SOLANA_PRIVATE_KEY:
+                    import json
+                    key_bytes = bytes(json.loads(Config.SOLANA_PRIVATE_KEY))
+                    self.keypair = Keypair.from_bytes(key_bytes)
+                else:
+                    # Attempt to decode base58
+                    self.keypair = Keypair.from_base58_string(Config.SOLANA_PRIVATE_KEY)
             except Exception as e:
                 logger.error(f"Failed to load private key: {e}")
 
