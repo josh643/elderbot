@@ -7,17 +7,35 @@ import sys
 import os
 
 # Add project root to path
-sys.path.append(str(Path(__file__).parent.parent.parent))
+# Use absolute path to avoid ambiguity in Docker
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from src.config.config import Config
-from src.utils.logger import logger
-from src.clients.solana_client import SolanaClient
-from src.clients.jupiter_client import JupiterClient
-from src.clients.rugcheck_client import RugCheckClient
-from src.engine.strategy import Strategy
-from src.engine.money_manager import MoneyManager
-from src.dashboard.telegram_bot import TelegramBot
-from src.utils.csv_logger import CSVLogger
+# Explicitly ensure /app is in path for Docker
+if "/app" not in sys.path:
+    sys.path.append("/app")
+
+try:
+    from src.config.config import Config
+    from src.utils.logger import logger
+    from src.clients.solana_client import SolanaClient
+    from src.clients.jupiter_client import JupiterClient
+    from src.clients.rugcheck_client import RugCheckClient
+    from src.engine.strategy import Strategy
+    from src.engine.money_manager import MoneyManager
+    from src.dashboard.telegram_bot import TelegramBot
+    from src.utils.csv_logger import CSVLogger
+except ImportError as e:
+    # Fallback for direct execution
+    sys.path.append(os.getcwd())
+    from src.config.config import Config
+    from src.utils.logger import logger
+    from src.clients.solana_client import SolanaClient
+    from src.clients.jupiter_client import JupiterClient
+    from src.clients.rugcheck_client import RugCheckClient
+    from src.engine.strategy import Strategy
+    from src.engine.money_manager import MoneyManager
+    from src.dashboard.telegram_bot import TelegramBot
+    from src.utils.csv_logger import CSVLogger
 
 class BotEngine:
     def __init__(self):
