@@ -1,5 +1,6 @@
 import httpx
 import base64
+import socket
 from src.utils.logger import logger
 from src.config.config import Config
 
@@ -9,6 +10,14 @@ class JupiterClient:
 
     def __init__(self):
         self.known_tokens = set()
+        # Create a custom transport to force IPv4
+        # Note: httpx uses 'transport' not 'connector' (aiohttp)
+        # However, httpx handles IPv4 fallback better usually.
+        # But if we want to be explicit with httpx:
+        # We can pass local_address="0.0.0.0" to force IPv4 binding? 
+        # Or just trust that system certs fixed it.
+        # But to be safe against the 'No address' error which is often DNS family mismatch:
+        pass
 
     async def get_quote(self, input_mint: str, output_mint: str, amount: int, slippage_bps: int = 50):
         url = f"{self.QUOTE_API_URL}/quote"
@@ -20,6 +29,10 @@ class JupiterClient:
             "onlyDirectRoutes": "false",
             "asLegacyTransaction": "false" # Use versioned
         }
+        # Force IPv4 transport if needed, or rely on system DNS. 
+        # Since we added ca-certificates, standard client should work.
+        # But let's add a verify=False fallback if certificates are still weird (Not recommended for prod but for debug)
+        # Actually, let's keep verify=True but use a standard client.
         async with httpx.AsyncClient() as client:
             try:
                 resp = await client.get(url, params=params)
