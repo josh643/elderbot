@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # Python Trading Bot Engine
+  bot:
+    build: .
+    container_name: skry-engine
+    restart: always
+    command: ["python", "src/engine/bot.py"]
+    volumes:
+      - ./data:/app/data  # Persist data
+      - ./.env:/app/.env  # Mount .env file (Must be created on Hostinger manually or via variable)
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Streamlit Dashboard
+  dashboard:
+    build: .
+    container_name: skry-dashboard
+    restart: always
+    command: ["streamlit", "run", "src/dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - bot
