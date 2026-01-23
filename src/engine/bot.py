@@ -67,6 +67,12 @@ class BotEngine:
         self.running = True
         logger.info("Starting Skry R&D Autonomous Engine...")
         
+        # Link engine to telegram
+        self.telegram.set_engine(self)
+        
+        # Start Telegram Polling in background
+        asyncio.create_task(self.telegram.poll_updates())
+        
         # Main Loop
         while self.running:
             try:
